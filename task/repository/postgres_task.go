@@ -45,9 +45,12 @@ func (p *postgresTaskRepository) List() ([]*models.Task, error) {
 	}
 	return tasks, err
 }
-func (p *postgresTaskRepository) Delete() {
-
+func (p *postgresTaskRepository) Delete(id int) error {
+	_, err := p.DB.Query("DELETE FROM task where id_task = ?", id)
+	return err
 }
-func (p *postgresTaskRepository) Edit() {
-
+func (p *postgresTaskRepository) Edit(task *models.Task) error {
+	_, err := p.DB.Query("UPDATE task SET status = ?, title = ? where id_task = ?",
+		task.Status, task.Title, task.ID)
+	return err
 }

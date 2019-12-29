@@ -7,7 +7,7 @@ import (
 //Repository represents task's interface
 type Repository interface {
 	Add(*models.Task) error
-	Delete()
-	Edit()
+	Delete(int) error
+	Edit(*models.Task) error
 	List() ([]*models.Task, error)
 }
