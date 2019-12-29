@@ -9,5 +9,5 @@ type Repository interface {
 	Add(*models.Task) error
 	Delete()
 	Edit()
-	List()
+	List() ([]*models.Task, error)
 }
