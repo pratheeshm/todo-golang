@@ -8,8 +8,37 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/pratheeshm/todo-golang/models"
+	"github.com/pratheeshm/todo-golang/task"
 	"github.com/sirupsen/logrus"
 )
+
+func TestNewPostgresTaskRepository(t *testing.T) {
+	type args struct {
+		db *sql.DB
+	}
+	tests := []struct {
+		name string
+		args args
+		want task.Repository
+	}{
+		{
+			name: "Normal Case 1: Return object of type task.Repository",
+			args: args{
+				db: &sql.DB{},
+			},
+			want: &postgresTaskRepository{
+				DB: &sql.DB{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewPostgresTaskRepository(tt.args.db); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewPostgresTaskRepository() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func Test_postgresTaskRepository_Add(t *testing.T) {
 	query := "INSERT INTO task(title, status) values(?, ?)"
@@ -48,9 +77,7 @@ func Test_postgresTaskRepository_Add(t *testing.T) {
 			mock.ExpectQuery(regexp.QuoteMeta(query)).
 				WithArgs("Take maths notes", 0).
 				WillReturnRows()
-			p := &postgresTaskRepository{
-				DB: tt.fields.DB,
-			}
+			p := NewPostgresTaskRepository(tt.fields.DB)
 			if err := p.Add(tt.args.task); (err != nil) != tt.wantErr {
 				t.Errorf("postgresTaskRepository.Add() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -93,9 +120,7 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &postgresTaskRepository{
-				DB: tt.fields.DB,
-			}
+			p := NewPostgresTaskRepository(tt.fields.DB)
 			rows := mock.NewRows([]string{"id_task", "status", "title"}).
 				AddRow(tt.want[0].ID, tt.want[0].Status, tt.want[0].Title).
 				AddRow(tt.want[1].ID, tt.want[1].Status, tt.want[1].Title)
@@ -143,9 +168,7 @@ func Test_postgresTaskRepository_Delete(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &postgresTaskRepository{
-				DB: tt.fields.DB,
-			}
+			p := NewPostgresTaskRepository(tt.fields.DB)
 			mock.ExpectQuery(regexp.QuoteMeta(query)).
 				WithArgs(tt.args.id).
 				WillReturnRows()
@@ -190,9 +213,7 @@ func Test_postgresTaskRepository_Edit(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &postgresTaskRepository{
-				DB: tt.fields.DB,
-			}
+			p := NewPostgresTaskRepository(tt.fields.DB)
 			mock.ExpectQuery(regexp.QuoteMeta(query)).
 				WithArgs(tt.args.task.Status, tt.args.task.Title, tt.args.task.ID).
 				WillReturnRows()
