@@ -2,6 +2,13 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+
+	"github.com/pratheeshm/todo-golang/task/usecase"
+
+	"github.com/pratheeshm/todo-golang/task/repository"
+
+	taskdeliver "github.com/pratheeshm/todo-golang/task/delivery/http"
 
 	"database/sql"
 
@@ -25,6 +32,13 @@ func main() {
 	}
 	defer db.Close()
 	log.Info("Connected to DB successfully")
+	tr := repository.NewPostgresTaskRepository(db)
+	tu := usecase.NewTaskUsecase(tr)
+	h := taskdeliver.NewTaskHandler(tu)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", viper.GetString("server.port")), h)
+	if err != nil {
+		log.Panic(err)
+	}
 }
 func mustInitDB() (*sql.DB, error) {
 	host := viper.GetString("database.host")
