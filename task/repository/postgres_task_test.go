@@ -41,7 +41,7 @@ func TestNewPostgresTaskRepository(t *testing.T) {
 }
 
 func Test_postgresTaskRepository_Add(t *testing.T) {
-	query := "INSERT INTO task(title, status) values(?, ?)"
+	query := "INSERT INTO task(title, status) values($1, $2)"
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		logrus.Error("expected no error, but got:", err)

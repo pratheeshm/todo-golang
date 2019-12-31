@@ -6,5 +6,8 @@
         "password": "password",
         "dbname": "todo",
         "sslmode": "disable"
+    },
+    "server": {
+        "port": 3000
     }
 }

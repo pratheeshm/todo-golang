@@ -19,7 +19,7 @@ func NewPostgresTaskRepository(db *sql.DB) task.Repository {
 	return &postgresTaskRepository{db}
 }
 func (p *postgresTaskRepository) Add(task *models.Task) error {
-	_, err := p.DB.Query("INSERT INTO task(title, status) values(?, ?)",
+	_, err := p.DB.Query("INSERT INTO task(title, status) values($1, $2)",
 		task.Title, task.Status)
 	return err
 }
