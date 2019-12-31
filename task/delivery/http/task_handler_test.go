@@ -3,15 +3,14 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
+	nethttp "net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pratheeshm/todo-golang/task/mocks"
-
-	nethttp "net/http"
-
 	"github.com/pratheeshm/todo-golang/task"
+	"github.com/pratheeshm/todo-golang/task/mocks"
 )
 
 func TestTaskHandler_Add(t *testing.T) {
@@ -37,6 +36,41 @@ func TestTaskHandler_Add(t *testing.T) {
 			"title":  "Test title",
 		},
 		message: "success",
+	}, {
+		name: "Usecase returns error",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{
+				Error: errors.New("Usecase.Error()"),
+			},
+		},
+		statusCode: 500,
+		body: map[string]interface{}{
+			"status": 0,
+			"title":  "Test title",
+		},
+		message: "internal server error",
+	}, {
+		name: "request body parse error",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{},
+		},
+		statusCode: 400,
+		body: map[string]interface{}{
+			"status": "4",
+			"title":  "Test title",
+		},
+		message: "Can not decode body",
+	}, {
+		name: "validation error",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{},
+		},
+		statusCode: 400,
+		body: map[string]interface{}{
+			"status": 4,
+			"title":  "Test title",
+		},
+		message: "validation error",
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,7 +94,7 @@ func TestTaskHandler_Add(t *testing.T) {
 			defer res.Body.Close()
 			respMsg, _ := ioutil.ReadAll(res.Body)
 			if msg := string(respMsg); msg != tt.message {
-				t.Fatalf("expected msg %v, but got %v", msg, tt.message)
+				t.Fatalf("expected msg %v, but got %v", tt.message, msg)
 			}
 		})
 	}

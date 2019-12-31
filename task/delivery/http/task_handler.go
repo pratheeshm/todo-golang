@@ -15,11 +15,6 @@ type TaskHandler struct {
 	TaskUsecase task.Usecase
 }
 
-//ResponseMessage contains Response message
-type ResponseMessage struct {
-	Message string
-}
-
 // NewTaskHandler will initialize the task/ resources endpoint
 func NewTaskHandler(r chi.Router, tu task.Usecase) {
 	taskHandler := &TaskHandler{
@@ -39,12 +34,19 @@ func (h *TaskHandler) Add(w nethttp.ResponseWriter, r *nethttp.Request) {
 	if err != nil {
 		w.WriteHeader(nethttp.StatusBadRequest)
 		w.Write([]byte("Can not decode body"))
+		return
 	}
 	validate := validator.New()
 	err = validate.Struct(task)
 	if err != nil {
 		w.WriteHeader(nethttp.StatusBadRequest)
 		w.Write([]byte("validation error"))
+		return
+	}
+	err = h.TaskUsecase.Add(task)
+	if err != nil {
+		w.WriteHeader(nethttp.StatusInternalServerError)
+		w.Write([]byte("internal server error"))
 		return
 	}
 	w.WriteHeader(nethttp.StatusOK)
