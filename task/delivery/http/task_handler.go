@@ -5,6 +5,7 @@ import (
 	nethttp "net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/go-playground/validator/v10"
 	"github.com/pratheeshm/todo-golang/models"
 	"github.com/pratheeshm/todo-golang/task"
 )
@@ -36,13 +37,18 @@ func (h *TaskHandler) Add(w nethttp.ResponseWriter, r *nethttp.Request) {
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(task)
 	if err != nil {
-		response := ResponseMessage{
-			Message: "Could not parse request Body",
-		}
 		w.WriteHeader(nethttp.StatusBadRequest)
-		resData, _ := json.Marshal(response)
-		w.Write(resData)
+		w.Write([]byte("Can not decode body"))
 	}
+	validate := validator.New()
+	err = validate.Struct(task)
+	if err != nil {
+		w.WriteHeader(nethttp.StatusBadRequest)
+		w.Write([]byte("validation error"))
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
+	w.Write([]byte("success"))
 }
 
 //List handler
