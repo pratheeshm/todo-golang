@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	nethttp "net/http"
 	"net/http/httptest"
@@ -95,6 +96,49 @@ func TestTaskHandler_Add(t *testing.T) {
 			respMsg, _ := ioutil.ReadAll(res.Body)
 			if msg := string(respMsg); msg != tt.message {
 				t.Fatalf("expected msg %v, but got %v", tt.message, msg)
+			}
+		})
+	}
+}
+
+func TestNewTaskHandler(t *testing.T) {
+	u := &mocks.MockUsecase{}
+	urlStatus := map[bool]string{true: "Found", false: "Not found"}
+	server := httptest.NewServer(NewTaskHandler(u))
+	defer server.Close()
+	baseURL := fmt.Sprintf("%s", server.URL)
+	tests := []struct {
+		name    string
+		method  string
+		url     string
+		isFound bool
+	}{{
+		name:    "Normal Test1:=",
+		method:  "GET",
+		url:     "/list",
+		isFound: true,
+	}, {
+		name:    "invalid endpoint",
+		method:  "GET",
+		url:     "/abc",
+		isFound: false,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var res *nethttp.Response
+			var err error
+			switch method := tt.method; method {
+			case "GET":
+				res, err = nethttp.Get(baseURL + tt.url)
+			default:
+				t.Fatalf("Method not found")
+			}
+			if err != nil {
+				t.Fatalf("got error: %v", err)
+			}
+			if notFound := (res.StatusCode == nethttp.StatusNotFound); notFound == tt.isFound {
+				t.Fatalf("URL - %v  expected it as %v but got %v",
+					tt.url, urlStatus[tt.isFound], urlStatus[!notFound])
 			}
 		})
 	}

@@ -16,7 +16,8 @@ type TaskHandler struct {
 }
 
 // NewTaskHandler will initialize the task/ resources endpoint
-func NewTaskHandler(r chi.Router, tu task.Usecase) {
+func NewTaskHandler(tu task.Usecase) nethttp.Handler {
+	r := chi.NewMux()
 	taskHandler := &TaskHandler{
 		TaskUsecase: tu,
 	}
@@ -24,6 +25,7 @@ func NewTaskHandler(r chi.Router, tu task.Usecase) {
 	r.Get("/list", taskHandler.List)
 	r.Put("/edit", taskHandler.Edit)
 	r.Delete("/task/{id:[0-9]+}", taskHandler.Delete)
+	return r
 }
 
 //Add task handler
