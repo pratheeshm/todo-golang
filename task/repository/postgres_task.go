@@ -47,7 +47,14 @@ func (p *postgresTaskRepository) List() ([]*models.Task, error) {
 	return tasks, err
 }
 func (p *postgresTaskRepository) Delete(id int) error {
-	_, err := p.DB.Query("DELETE FROM task where id_task = ?", id)
+	result, err := p.DB.Exec("DELETE FROM task where id_task = $1", id)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if rows == 0 {
+		return core.ErrRecordNotFound
+	}
 	return err
 }
 func (p *postgresTaskRepository) Edit(task *models.Task) error {

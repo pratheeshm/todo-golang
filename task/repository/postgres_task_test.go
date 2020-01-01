@@ -139,7 +139,7 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 }
 
 func Test_postgresTaskRepository_Delete(t *testing.T) {
-	query := "DELETE FROM task where id_task = ?"
+	query := "DELETE FROM task where id_task = $1"
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		logrus.Error(err)
@@ -152,10 +152,12 @@ func Test_postgresTaskRepository_Delete(t *testing.T) {
 		id int
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name         string
+		fields       fields
+		args         args
+		wantErr      bool
+		rowsAffected int64
+		dbError      error
 	}{{
 		name: "Norml Test 1: Delete a task ",
 		fields: fields{
@@ -164,16 +166,39 @@ func Test_postgresTaskRepository_Delete(t *testing.T) {
 		args: args{
 			id: 1,
 		},
-		wantErr: false,
+		wantErr:      false,
+		rowsAffected: 1,
+	}, {
+		name: "invalid id",
+		fields: fields{
+			DB: db,
+		},
+		args: args{
+			id: 1,
+		},
+		wantErr:      true,
+		rowsAffected: 0,
+		dbError:      errors.New("record not found"),
+	}, {
+		name: "invalid id",
+		fields: fields{
+			DB: db,
+		},
+		args: args{
+			id: 1,
+		},
+		wantErr:      true,
+		rowsAffected: 0,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPostgresTaskRepository(tt.fields.DB)
-			mock.ExpectQuery(regexp.QuoteMeta(query)).
+			mock.ExpectExec(regexp.QuoteMeta(query)).
 				WithArgs(tt.args.id).
-				WillReturnRows()
+				WillReturnResult(sqlmock.NewResult(0, tt.rowsAffected)).
+				WillReturnError(tt.dbError)
 			if err := p.Delete(tt.args.id); (err != nil) != tt.wantErr {
-				t.Errorf("postgresTaskRepository.Delete() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Test %s - got error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			}
 		})
 	}

@@ -117,5 +117,24 @@ func (h *TaskHandler) Edit(w nethttp.ResponseWriter, r *nethttp.Request) {
 
 //Delete handler
 func (h *TaskHandler) Delete(w nethttp.ResponseWriter, r *nethttp.Request) {
-
+	if chi.URLParam(r, "id") == "" {
+		w.WriteHeader(nethttp.StatusBadRequest)
+		w.Write([]byte("id is empty"))
+		return
+	}
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	err := h.TaskUsecase.Delete(id)
+	if err != nil {
+		if err == core.ErrRecordNotFound {
+			w.WriteHeader(nethttp.StatusBadRequest)
+			w.Write([]byte("failure"))
+			return
+		}
+		logrus.Error(err)
+		w.WriteHeader(nethttp.StatusInternalServerError)
+		w.Write([]byte("internal server error"))
+		return
+	}
+	w.WriteHeader(nethttp.StatusOK)
+	w.Write([]byte("success"))
 }
