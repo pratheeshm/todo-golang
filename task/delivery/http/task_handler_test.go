@@ -292,3 +292,71 @@ func TestTaskHandler_Edit(t *testing.T) {
 		})
 	}
 }
+func TestTaskHandler_Delete(t *testing.T) {
+	type fields struct {
+		TaskUsecase task.Usecase
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		urlParam   map[string]string
+		statusCode int
+	}{{
+		name: "Normal Case1:",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{},
+		},
+		urlParam: map[string]string{
+			"id": "1",
+		},
+		statusCode: 200,
+	}, {
+		name: "empty id",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{},
+		},
+		statusCode: 400,
+	}, {
+		name: "record not found",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{
+				Error: core.ErrRecordNotFound,
+			},
+		},
+		urlParam: map[string]string{
+			"id": "1",
+		},
+		statusCode: 400,
+	}, {
+		name: "db error",
+		fields: fields{
+			TaskUsecase: &mocks.MockUsecase{
+				Error: errors.New("db error"),
+			},
+		},
+		urlParam: map[string]string{
+			"id": "1",
+		},
+		statusCode: 500,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &TaskHandler{
+				TaskUsecase: tt.fields.TaskUsecase,
+			}
+			req := httptest.NewRequest("PUT", "/task", nil)
+			ctx := chi.NewRouteContext()
+			for k, v := range tt.urlParam {
+				ctx.URLParams.Add(k, v)
+			}
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
+			rec := httptest.NewRecorder()
+			h.Delete(rec, req)
+			res := rec.Result()
+			if res.StatusCode != tt.statusCode {
+				t.Fatalf("Test - %s , got statuscode %d but expected %d",
+					tt.name, res.StatusCode, tt.statusCode)
+			}
+		})
+	}
+}
