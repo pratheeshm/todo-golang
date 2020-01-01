@@ -96,11 +96,13 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 		DB *sql.DB
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		want    []*models.Task
-		wantErr bool
-		dbError error
+		name     string
+		fields   fields
+		rows     []*models.Task
+		want     []*models.Task
+		wantErr  bool
+		dbError  error
+		rowError map[int]error
 	}{
 		{
 			name: "Normal Case 1: List all task",
@@ -116,23 +118,74 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 				Status: "todo",
 				Title:  "do physics homework",
 			}},
+			rows: []*models.Task{&models.Task{
+				ID:     0,
+				Status: "todo",
+				Title:  "Make maths note",
+			}, &models.Task{
+				ID:     1,
+				Status: "todo",
+				Title:  "do physics homework",
+			}},
 			wantErr: false,
 		}, {
 			name: "db error",
 			fields: fields{
 				DB: db,
 			},
+			rows:    []*models.Task{},
 			want:    []*models.Task{},
 			wantErr: true,
 			dbError: errors.New("db error"),
+		}, {
+			name: "row scan returns error ",
+			fields: fields{
+				DB: db,
+			},
+			rows: []*models.Task{&models.Task{
+				ID:     0,
+				Status: "todo",
+				Title:  "Make maths note",
+			}, &models.Task{
+				ID:     1,
+				Status: "todo",
+				Title:  "do physics homework",
+			}},
+			want:     []*models.Task{},
+			wantErr:  true,
+			rowError: map[int]error{1: errors.New("row error")},
+		}, {
+			name: "Normal Case 1: List all task",
+			fields: fields{
+				DB: db,
+			},
+			want: []*models.Task{&models.Task{
+				ID:     0,
+				Status: "todo",
+				Title:  "Make maths note",
+			}, &models.Task{
+				ID:     1,
+				Status: "todo",
+				Title:  "do physics homework",
+			}},
+			rows: []*models.Task{&models.Task{
+				ID:     0,
+				Status: "todo",
+				Title:  "Make maths note",
+			}, &models.Task{
+				ID:     1,
+				Status: "todo",
+				Title:  "do physics homework",
+			}},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPostgresTaskRepository(tt.fields.DB)
 			rows := mock.NewRows([]string{"id_task", "status", "title"})
-			for _, v := range tt.want {
-				rows = rows.AddRow(v.ID, v.Status, v.Title)
+			for i, v := range tt.rows {
+				rows = rows.AddRow(v.ID, v.Status, v.Title).RowError(i, tt.rowError[i])
 			}
 			mock.ExpectQuery(regexp.QuoteMeta(query)).
 				WillReturnRows(rows).WillReturnError(tt.dbError)
