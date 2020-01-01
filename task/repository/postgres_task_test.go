@@ -100,6 +100,7 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 		fields  fields
 		want    []*models.Task
 		wantErr bool
+		dbError error
 	}{
 		{
 			name: "Normal Case 1: List all task",
@@ -116,23 +117,31 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 				Title:  "do physics homework",
 			}},
 			wantErr: false,
+		}, {
+			name: "db error",
+			fields: fields{
+				DB: db,
+			},
+			want:    []*models.Task{},
+			wantErr: true,
+			dbError: errors.New("db error"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPostgresTaskRepository(tt.fields.DB)
-			rows := mock.NewRows([]string{"id_task", "status", "title"}).
-				AddRow(tt.want[0].ID, tt.want[0].Status, tt.want[0].Title).
-				AddRow(tt.want[1].ID, tt.want[1].Status, tt.want[1].Title)
+			rows := mock.NewRows([]string{"id_task", "status", "title"})
+			for _, v := range tt.want {
+				rows = rows.AddRow(v.ID, v.Status, v.Title)
+			}
 			mock.ExpectQuery(regexp.QuoteMeta(query)).
-				WillReturnRows(rows)
+				WillReturnRows(rows).WillReturnError(tt.dbError)
 			got, err := p.List()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("postgresTaskRepository.List() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("Test %s -, error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("postgresTaskRepository.List() = %v, want %v", got, tt.want)
+				t.Errorf("Test %s - got = %v, want %v", tt.name, got, tt.want)
 			}
 		})
 	}
