@@ -52,7 +52,7 @@ func Test_taskUsecase_Add(t *testing.T) {
 			},
 			args: args{
 				task: &models.Task{
-					Status: 0,
+					Status: "todo",
 					Title:  "Take maths note",
 				},
 			},
@@ -67,7 +67,7 @@ func Test_taskUsecase_Add(t *testing.T) {
 			},
 			args: args{
 				task: &models.Task{
-					Status: 0,
+					Status: "todo",
 					Title:  "Take maths note",
 				},
 			},
@@ -134,7 +134,7 @@ func Test_taskUsecase_Edit(t *testing.T) {
 			task: &models.Task{
 				ID:     0,
 				Title:  "Take Maths Note",
-				Status: 1,
+				Status: "inprogress",
 			},
 		},
 	}}
@@ -164,7 +164,7 @@ func Test_taskUsecase_List(t *testing.T) {
 				Tasks: []*models.Task{
 					{
 						ID:     0,
-						Status: 0,
+						Status: "todo",
 						Title:  "Take Math notes",
 					},
 				},
@@ -173,7 +173,7 @@ func Test_taskUsecase_List(t *testing.T) {
 		want: []*models.Task{
 			{
 				ID:     0,
-				Status: 0,
+				Status: "todo",
 				Title:  "Take Math notes",
 			},
 		},
