@@ -3,8 +3,6 @@ package repository
 import (
 	"database/sql"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pratheeshm/todo-golang/core"
 	"github.com/pratheeshm/todo-golang/models"
 
@@ -30,19 +28,14 @@ func (p *postgresTaskRepository) List() ([]*models.Task, error) {
 	if err != nil {
 		return tasks, err
 	}
-	defer func() {
-		err = rows.Close()
-		if err != nil {
-			logrus.Warn(err)
-		}
-	}()
+	defer rows.Close()
 	for rows.Next() {
 		task := &models.Task{}
-		err := rows.Scan(&task.ID, &task.Status, &task.Title)
-		if err != nil {
-			return nil, err
-		}
+		rows.Scan(&task.ID, &task.Status, &task.Title)
 		tasks = append(tasks, task)
+	}
+	if err = rows.Err(); err != nil {
+		return []*models.Task{}, err
 	}
 	return tasks, err
 }
