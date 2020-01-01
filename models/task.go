@@ -4,5 +4,5 @@ package models
 type Task struct {
 	ID     int    `json:"id_task"`
 	Title  string `json:"title" validate:"required"`
-	Status int    `json:"status" validate:"gte=0,lte=2"`
+	Status string `json:"status" validate:"oneof=todo inprogress done"`
 }

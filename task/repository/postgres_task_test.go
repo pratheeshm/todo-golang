@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"reflect"
 	"regexp"
 	"testing"
@@ -66,7 +67,7 @@ func Test_postgresTaskRepository_Add(t *testing.T) {
 				task: &models.Task{
 					ID:     1,
 					Title:  "Take maths notes",
-					Status: 0,
+					Status: "todo",
 				},
 			},
 			wantErr: false,
@@ -75,8 +76,7 @@ func Test_postgresTaskRepository_Add(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock.ExpectQuery(regexp.QuoteMeta(query)).
-				WithArgs("Take maths notes", 0).
-				WillReturnRows()
+				WithArgs("Take maths notes", "todo").WillReturnRows()
 			p := NewPostgresTaskRepository(tt.fields.DB)
 			if err := p.Add(tt.args.task); (err != nil) != tt.wantErr {
 				t.Errorf("postgresTaskRepository.Add() error = %v, wantErr %v", err, tt.wantErr)
@@ -86,7 +86,7 @@ func Test_postgresTaskRepository_Add(t *testing.T) {
 }
 
 func Test_postgresTaskRepository_List(t *testing.T) {
-	query := "SELECT * FROM task"
+	query := "SELECT id_task, status, title FROM task"
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		logrus.Error("expected no error, but got:", err)
@@ -108,11 +108,11 @@ func Test_postgresTaskRepository_List(t *testing.T) {
 			},
 			want: []*models.Task{&models.Task{
 				ID:     0,
-				Status: 0,
+				Status: "todo",
 				Title:  "Make maths note",
 			}, &models.Task{
 				ID:     1,
-				Status: 0,
+				Status: "todo",
 				Title:  "do physics homework",
 			}},
 			wantErr: false,
@@ -180,7 +180,7 @@ func Test_postgresTaskRepository_Delete(t *testing.T) {
 }
 
 func Test_postgresTaskRepository_Edit(t *testing.T) {
-	query := "UPDATE task SET status = ?, title = ? where id_task = ?"
+	query := "UPDATE task SET status = $1 , title = $2 where id_task = $3"
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		logrus.Error(err)
@@ -193,10 +193,12 @@ func Test_postgresTaskRepository_Edit(t *testing.T) {
 		task *models.Task
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name        string
+		fields      fields
+		args        args
+		wantErr     bool
+		rowsUpdated int64
+		dbError     error
 	}{{
 		name: "Normal Case 1: Edit a task Status",
 		fields: fields{
@@ -205,20 +207,52 @@ func Test_postgresTaskRepository_Edit(t *testing.T) {
 		args: args{
 			&models.Task{
 				ID:     1,
-				Status: 1,
+				Status: "inprogress",
 				Title:  "Take math notes",
 			},
 		},
-		wantErr: false,
+		wantErr:     false,
+		rowsUpdated: 1,
+	}, {
+		name: "Edit a invalid task",
+		fields: fields{
+			DB: db,
+		},
+		args: args{
+			&models.Task{
+				ID:     1,
+				Status: "inprogress",
+				Title:  "Take math notes",
+			},
+		},
+		wantErr:     true,
+		rowsUpdated: 0,
+	}, {
+		name: "Edit a task Status but return error",
+		fields: fields{
+			DB: db,
+		},
+		args: args{
+			&models.Task{
+				ID:     1,
+				Status: "inprogress",
+				Title:  "Take math notes",
+			},
+		},
+		wantErr:     true,
+		rowsUpdated: 0,
+		dbError:     errors.New("DB error"),
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewPostgresTaskRepository(tt.fields.DB)
-			mock.ExpectQuery(regexp.QuoteMeta(query)).
+			mock.ExpectExec(regexp.QuoteMeta(query)).
 				WithArgs(tt.args.task.Status, tt.args.task.Title, tt.args.task.ID).
-				WillReturnRows()
-			if err := p.Edit(tt.args.task); (err != nil) != tt.wantErr {
-				t.Errorf("postgresTaskRepository.Edit() error = %v, wantErr %v", err, tt.wantErr)
+				WillReturnResult(sqlmock.NewResult(0, tt.rowsUpdated)).
+				WillReturnError(tt.dbError)
+			err := p.Edit(tt.args.task)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Test- %v,error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			}
 		})
 	}
