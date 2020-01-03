@@ -1,0 +1,33 @@
+
+version: '3'
+
+# Define services
+services:
+
+  # App Service
+  app:
+    # Configuration for building the docker image for the service
+    build:
+      context: . # Use an image built from the specified dockerfile in the current directory.
+      dockerfile: app.Dockerfile
+    container_name: todo-app
+    ports:
+      - "3000:3000" # Forward the exposed port 3000 on the container to port 3000 on the host machine
+    restart: unless-stopped
+    depends_on: 
+      - db # This service depends on db. Start that first. 
+    networks: # Networks to join (Services on the same network can communicate with each other using their name)
+      - backend
+
+  db:
+    build:
+      context: . # Use an image built from the specified dockerfile in the current directory.
+      dockerfile: db.Dockerfile
+    container_name: todo-postgres
+    ports:
+      - '5432:5432'
+    networks:
+      - backend
+
+networks:
+  backend: 

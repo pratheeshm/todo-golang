@@ -45,7 +45,7 @@ func mustInitDB() (*sql.DB, error) {
 	user := viper.GetString("database.username")
 	pass := viper.GetString("database.password")
 	port := viper.GetInt("database.port")
-	ssl := viper.GetString("databae.sslmode")
+	ssl := viper.GetString("database.sslmode")
 	dbname := viper.GetString("database.dbname")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=%s",
